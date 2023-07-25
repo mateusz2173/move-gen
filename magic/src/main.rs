@@ -14,8 +14,11 @@ fn main() {
     let rook_magic_path = path.join("rook_magics.bin");
     let bishop_magic_path = path.join("bishop_magics.bin");
 
+    println!("Generating magics for rooks...");
     save_magics(Slider::Rook, rook_magic_path).unwrap();
+    println!("Generating magics for bishops...");
     save_magics(Slider::Bishop, bishop_magic_path).unwrap();
+    println!("Done!");
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -54,18 +57,25 @@ fn save_magics(slider: Slider, path: PathBuf) -> Result<(), Box<dyn std::error::
 
 fn generate_magics(slider: Slider) -> ([MagicEntry; 64], Vec<Bitboard>) {
     let index_bits = match slider {
-        Slider::Bishop => 11,
-        Slider::Rook => 13,
+        Slider::Bishop => 9,
+        Slider::Rook => 12,
         Slider::Queen => unreachable!(),
     };
+    let slider_name = slider.to_string().to_lowercase();
     let mut magics = [MagicEntry::default(); 64];
     let mut moves: Vec<Bitboard> = Vec::new();
     for sq in Square::iter() {
         let (magic_entry, table) = find_magic(&slider, sq, index_bits);
+        println!(
+            "Generated table for {} of size: {}",
+            slider_name,
+            table.len()
+        );
         magics[sq as usize] = magic_entry;
         moves.extend(table.clone());
     }
 
+    println!("Generated {} {} moves.", moves.len(), slider_name);
     (magics, moves)
 }
 

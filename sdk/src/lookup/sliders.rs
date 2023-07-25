@@ -10,6 +10,16 @@ pub enum Slider {
     Queen,
 }
 
+impl ToString for Slider {
+    fn to_string(&self) -> String {
+        match self {
+            Slider::Bishop => "Bishop".to_string(),
+            Slider::Rook => "Rook".to_string(),
+            Slider::Queen => "Queen".to_string(),
+        }
+    }
+}
+
 impl Slider {
     #[must_use]
     pub fn relevant_blockers(&self, sq: Square) -> Bitboard {
@@ -36,7 +46,7 @@ impl Slider {
 
     #[must_use]
     pub fn moves(&self, sq: Square, blockers: Bitboard) -> Bitboard {
-        mask_slider_attacks_occ(self, blockers, sq)
+        mask_slider_attacks_occ(*self, blockers, sq)
     }
 
     #[must_use]
@@ -49,7 +59,7 @@ impl Slider {
     }
 }
 
-fn mask_slider_attacks_occ(slider: &Slider, occ: Bitboard, sq: Square) -> Bitboard {
+fn mask_slider_attacks_occ(slider: Slider, occ: Bitboard, sq: Square) -> Bitboard {
     let mut attacks = Bitboard::empty();
 
     let offsets = match slider {

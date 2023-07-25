@@ -1,7 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use anyhow::anyhow;
-use enum_index::IndexEnum;
 
 use crate::{bitboard::Bitboard, fen::Fen, square::Square};
 
@@ -10,7 +9,7 @@ pub struct Position {
     pub pieces: [[Bitboard; 6]; 2],
     pub occupied: Bitboard,
     pub turn: Color,
-    pub castling: u8,
+    pub castling: Castling,
     pub en_passant: Option<Square>,
     pub halfmove_clock: u8,
     pub fullmove_number: u16,
@@ -32,45 +31,113 @@ pub enum Piece {
     King,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
-pub enum Castling {
-    WhiteKingside = 1,
-    WhiteQueenside = 2,
-    BlackKingside = 4,
-    BlackQueenside = 8,
+#[derive(Debug, Clone)]
+pub struct Castling {
+    inner: u8,
+}
+
+pub enum CastlingKind {
+    WhiteKingside,
+    WhiteQueenside,
+    BlackKingside,
+    BlackQueenside,
+}
+
+impl FromStr for Castling {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "-" {
+            return Ok(Castling { inner: 0 });
+        }
+
+        let mut inner = 0u8;
+
+        for c in s.chars() {
+            match c {
+                'K' => inner |= 0b1000,
+                'Q' => inner |= 0b0100,
+                'k' => inner |= 0b0010,
+                'q' => inner |= 0b0001,
+                _ => return Err(anyhow!("Invalid castling string: {}", s)),
+            }
+        }
+
+        Ok(Castling { inner })
+    }
+}
+
+impl From<Square> for CastlingKind {
+    fn from(value: Square) -> Self {
+        match value {
+            Square::G1 => CastlingKind::WhiteKingside,
+            Square::C1 => CastlingKind::WhiteQueenside,
+            Square::G8 => CastlingKind::BlackKingside,
+            Square::C8 => CastlingKind::BlackQueenside,
+            _ => panic!("Invalid castling square: {value}"),
+        }
+    }
+}
+
+impl CastlingKind {
+    /// Returns tuple of `(rook_target_square, king_target_square)`.
+    #[must_use]
+    pub fn target_squares(&self) -> (Square, Square) {
+        match self {
+            CastlingKind::WhiteKingside => (Square::E1, Square::G1),
+            CastlingKind::WhiteQueenside => (Square::E1, Square::C1),
+            CastlingKind::BlackKingside => (Square::E8, Square::G8),
+            CastlingKind::BlackQueenside => (Square::E8, Square::C8),
+        }
+    }
+
+    /// Returns tuple of `(rook_from_square, king_from_square)`.
+    #[must_use]
+    pub fn from_squares(&self) -> (Square, Square) {
+        match self {
+            CastlingKind::WhiteKingside => (Square::H1, Square::E1),
+            CastlingKind::WhiteQueenside => (Square::A1, Square::E1),
+            CastlingKind::BlackKingside => (Square::H8, Square::E8),
+            CastlingKind::BlackQueenside => (Square::A8, Square::E8),
+        }
+    }
 }
 
 impl Castling {
     #[must_use]
-    pub fn from_u8(value: u8) -> Vec<Castling> {
-        let mut castling = Vec::new();
-        if value & 1 != 0 {
-            castling.push(Castling::WhiteKingside);
-        }
-        if value & 2 != 0 {
-            castling.push(Castling::WhiteQueenside);
-        }
-        if value & 4 != 0 {
-            castling.push(Castling::BlackKingside);
-        }
-        if value & 8 != 0 {
-            castling.push(Castling::BlackQueenside);
-        }
-        castling
+    pub fn full() -> Castling {
+        Castling { inner: 0b1111 }
     }
 
     #[must_use]
-    pub fn to_u8(values: Vec<Castling>) -> u8 {
-        let mut value = 0;
-        for castling in values {
-            value |= match castling {
-                Castling::WhiteKingside => 1,
-                Castling::WhiteQueenside => 2,
-                Castling::BlackKingside => 4,
-                Castling::BlackQueenside => 8,
-            };
+    pub fn empty() -> Castling {
+        Castling { inner: 0 }
+    }
+
+    #[must_use]
+    pub fn has_castling_kind(&self, castling_kind: &CastlingKind) -> bool {
+        match castling_kind {
+            CastlingKind::WhiteKingside => self.inner & 0b1000 != 0,
+            CastlingKind::WhiteQueenside => self.inner & 0b0100 != 0,
+            CastlingKind::BlackKingside => self.inner & 0b0010 != 0,
+            CastlingKind::BlackQueenside => self.inner & 0b0001 != 0,
         }
-        value
+    }
+
+    pub fn remove_color_castling(&mut self, color: &Color) {
+        match color {
+            Color::White => self.inner &= 0b0011,
+            Color::Black => self.inner &= 0b1100,
+        }
+    }
+
+    pub fn add_castling_kind(&mut self, castling_kind: &CastlingKind) {
+        match castling_kind {
+            CastlingKind::WhiteKingside => self.inner |= 0b1000,
+            CastlingKind::WhiteQueenside => self.inner |= 0b0100,
+            CastlingKind::BlackKingside => self.inner |= 0b0010,
+            CastlingKind::BlackQueenside => self.inner |= 0b0001,
+        }
     }
 }
 
@@ -90,20 +157,36 @@ impl Position {
         }
     }
 
-    pub fn remove_piece_at(&mut self, square: &Square) -> Result<(), anyhow::Error> {
-        let (piece, color) = self.piece_at(square).ok_or(anyhow!(
-            "No piece at {}, \nfen: {}",
-            square.coords_str(),
-            self.to_fen()
-        ))?;
+    #[must_use]
+    pub fn swap_turn(&mut self) -> Color {
+        match self.turn {
+            Color::White => self.turn = Color::Black,
+            Color::Black => self.turn = Color::White,
+        }
+
+        self.turn
+    }
+
+    pub fn remove_piece_at(&mut self, square: &Square) -> Option<(Piece, Color)> {
+        let (piece, color) = self.piece_at(square)?;
 
         self.pieces[color as usize][piece as usize] ^= square.bitboard();
 
-        Ok(())
+        Some((piece, color))
     }
 
-    pub fn add_piece_at(&mut self, square: Square, piece: Piece, color: Color) {
+    pub fn add_piece_at(
+        &mut self,
+        square: Square,
+        piece: Piece,
+        color: Color,
+    ) -> Result<(), anyhow::Error> {
+        if self.piece_at(&square).is_some() {
+            return Err(anyhow!("Piece already at {}", square.coords_str()));
+        }
         self.pieces[color as usize][piece as usize] |= Into::<Bitboard>::into(square);
+
+        Ok(())
     }
 
     #[must_use]
@@ -157,12 +240,23 @@ impl Display for Color {
 
 impl Display for Castling {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Castling::WhiteKingside => write!(f, "K"),
-            Castling::WhiteQueenside => write!(f, "Q"),
-            Castling::BlackKingside => write!(f, "k"),
-            Castling::BlackQueenside => write!(f, "q"),
+        if self.has_castling_kind(&CastlingKind::WhiteKingside) {
+            write!(f, "K")?;
         }
+
+        if self.has_castling_kind(&CastlingKind::WhiteQueenside) {
+            write!(f, "Q")?;
+        }
+
+        if self.has_castling_kind(&CastlingKind::BlackKingside) {
+            write!(f, "k")?;
+        }
+
+        if self.has_castling_kind(&CastlingKind::BlackQueenside) {
+            write!(f, "q")?;
+        }
+
+        Ok(())
     }
 }
 
@@ -181,9 +275,11 @@ impl Display for Piece {
 
 impl Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for rank in (0..8).rev() {
+        for rank in (0..8u8).rev() {
             for file in 0..8u8 {
-                let square = Square::index_enum(rank * 8 + file as usize).unwrap();
+                let square: Square = (rank * 8 + file)
+                    .try_into()
+                    .expect("BUG: Square out of bounds");
                 if let Some((piece, color)) = self.piece_at(&square) {
                     write!(f, "{} ", piece.to_utf8_symbol(color))?;
                 } else {
@@ -191,6 +287,12 @@ impl Display for Position {
                 }
             }
             writeln!(f)?;
+        }
+
+        writeln!(f, "Turn: {}", self.turn)?;
+        writeln!(f, "Castling: {}", self.castling)?;
+        if let Some(en_passant) = self.en_passant {
+            writeln!(f, "En passant: {en_passant}")?;
         }
 
         Ok(())
@@ -243,7 +345,7 @@ impl Iterator for ColorIterator {
         match self.idx - 1 {
             0 => Some(Color::White),
             1 => Some(Color::Black),
-            _ => None, 
+            _ => None,
         }
     }
 }
@@ -251,8 +353,6 @@ impl Iterator for ColorIterator {
 impl Color {
     #[must_use]
     pub fn iter() -> ColorIterator {
-        ColorIterator {
-            idx: 0
-        }
+        ColorIterator { idx: 0 }
     }
 }

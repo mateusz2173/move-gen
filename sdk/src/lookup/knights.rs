@@ -1,4 +1,7 @@
-use crate::{bitboard::Bitboard, square::{Square, File}};
+use crate::{
+    bitboard::Bitboard,
+    square::{File, Square},
+};
 
 const FILE_A: Bitboard = File::A.bitboard();
 const FILE_B: Bitboard = File::B.bitboard();
@@ -14,20 +17,6 @@ pub fn gen_knight_attacks() -> [Bitboard; 64] {
         knight_attacks[sq as usize] = mask_knight_attacks(sq);
     }
     knight_attacks
-}
-
-#[must_use]
-pub fn gen_knight_lookups() -> String {
-    let knight_attacks = gen_knight_attacks();
-
-    let mut knight_attacks_str = String::from("pub const KNIGHT_ATTACKS: [Bitboard; 64] = [\n");
-
-    for sq in Square::iter() {
-        knight_attacks_str.push_str(&format!("    Bitboard({}),\n", knight_attacks[sq as usize].0));
-    }
-    knight_attacks_str.push_str("];\n");
-
-    knight_attacks_str
 }
 
 fn mask_knight_attacks(square: Square) -> Bitboard {

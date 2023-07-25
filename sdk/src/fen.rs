@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use enum_index::IndexEnum;
 
 use crate::{
     bitboard::Bitboard,
@@ -19,7 +18,7 @@ impl Fen for Position {
             pieces: [[Bitboard(0); 6]; 2],
             occupied: Bitboard(0),
             turn: Color::White,
-            castling: 0,
+            castling: Castling::empty(),
             en_passant: None,
             halfmove_clock: 0,
             fullmove_number: 1,
@@ -61,7 +60,8 @@ impl Fen for Position {
                         }
                     };
 
-                    let square = Square::index_enum((7 - rank) * 8 + file).unwrap();
+                    let square: Square =
+                        ((7 - u8::try_from(rank)?) * 8 + u8::try_from(file)?).try_into()?;
                     file += 1;
                     let idx = piece as usize;
 
@@ -84,26 +84,9 @@ impl Fen for Position {
             }
         };
 
-        let castling = fen.next().unwrap();
+        let castling: Castling = fen.next().unwrap().parse()?;
 
-        if castling != "-" {
-            for c in castling.chars() {
-                let castling = match c {
-                    'K' => Castling::WhiteKingside,
-                    'Q' => Castling::WhiteQueenside,
-                    'k' => Castling::BlackKingside,
-                    'q' => Castling::BlackQueenside,
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "Invalid FEN: Invalid castling character {}",
-                            c
-                        ))
-                    }
-                };
-
-                position.castling |= castling as u8;
-            }
-        }
+        position.castling = castling;
 
         let en_pass = fen.next().unwrap();
         position.en_passant = if en_pass == "-" {
@@ -125,7 +108,7 @@ impl Fen for Position {
             let file = file_char as u8 - b'a';
             let rank = rank_char as u8 - b'1';
 
-            Square::index_enum((rank * 8 + file) as usize)
+            (rank * 8 + file).try_into().ok()
         };
 
         Ok(position)
@@ -134,9 +117,11 @@ impl Fen for Position {
     fn to_fen(&self) -> String {
         let mut fen = String::new();
         let mut empty = 0;
-        for rank in (0..8).rev() {
-            for file in 0..8 {
-                let square = Square::index_enum(rank * 8 + file).unwrap();
+        for rank in (0..8u8).rev() {
+            for file in 0..8u8 {
+                let square: Square = (rank * 8 + file)
+                    .try_into()
+                    .expect("BUG: Square out of bounds");
                 let piece = self.piece_at(&square);
                 if let Some((piece, color)) = piece {
                     if empty != 0 {
@@ -163,22 +148,7 @@ impl Fen for Position {
         fen.push(' ');
         fen.push_str(&format!("{}", self.turn));
         fen.push(' ');
-        if self.castling == 0 {
-            fen.push('-');
-        } else {
-            if self.castling & Castling::WhiteKingside as u8 != 0 {
-                fen.push('K');
-            }
-            if self.castling & Castling::WhiteQueenside as u8 != 0 {
-                fen.push('Q');
-            }
-            if self.castling & Castling::BlackKingside as u8 != 0 {
-                fen.push('k');
-            }
-            if self.castling & Castling::BlackQueenside as u8 != 0 {
-                fen.push('q');
-            }
-        }
+        fen.push_str(self.castling.to_string().as_str());
         fen.push(' ');
         if let Some(square) = &self.en_passant {
             fen.push_str(&square.coords_str());
@@ -199,6 +169,7 @@ mod tests {
 
     use crate::bitboard::Bitboard;
     use crate::fen::Fen;
+    use crate::position::Castling;
     use crate::position::Color;
     use crate::position::Position;
 
@@ -225,7 +196,7 @@ mod tests {
             ],
             occupied: Bitboard(0x00FF_FF00_0000_00FF),
             turn: Color::White,
-            castling: 0b1111,
+            castling: Castling::full(),
             en_passant: None,
             halfmove_clock: 0,
             fullmove_number: 1,

@@ -5,7 +5,8 @@ use crate::position::Color;
 use crate::square::Rank;
 use crate::square::Square;
 
-fn gen_pawn_moves() -> [[Bitboard; 64]; 2] {
+#[must_use]
+pub fn gen_pawn_moves() -> [[Bitboard; 64]; 2] {
     let mut pawn_moves = [[EMPTY; 64]; 2];
     for color in Color::iter() {
         let direction = match color {
@@ -29,7 +30,8 @@ fn gen_pawn_moves() -> [[Bitboard; 64]; 2] {
     pawn_moves
 }
 
-fn gen_pawn_attacks() -> [[Bitboard; 64]; 2] {
+#[must_use]
+pub fn gen_pawn_attacks() -> [[Bitboard; 64]; 2] {
     let mut pawn_attacks = [[EMPTY; 64]; 2];
     for color in Color::iter() {
         let (first_dir, second_dir) = match color {
@@ -44,37 +46,4 @@ fn gen_pawn_attacks() -> [[Bitboard; 64]; 2] {
     }
 
     pawn_attacks
-}
-
-#[must_use]
-pub fn gen_pawn_lookups() -> (String, String) {
-    let pawn_moves = gen_pawn_moves();
-    let pawn_attacks = gen_pawn_attacks();
-
-    let mut pawn_moves_str = String::from("pub const PAWN_MOVES: [[Bitboard; 64]; 2] = [\n");
-    let mut pawn_attacks_str = String::from("pub const PAWN_ATTACKS: [[Bitboard; 64]; 2] = [\n");
-
-    for color in Color::iter() {
-        pawn_moves_str.push_str("    [\n");
-        pawn_attacks_str.push_str("    [\n");
-
-        for sq in Square::iter() {
-            pawn_moves_str.push_str(&format!(
-                "        Bitboard({}),\n",
-                pawn_moves[color as usize][sq as usize]
-            ));
-            pawn_attacks_str.push_str(&format!(
-                "        Bitboard({}),\n",
-                pawn_attacks[color as usize][sq as usize]
-            ));
-        }
-
-        pawn_moves_str.push_str("    ],\n");
-        pawn_attacks_str.push_str("    ],\n");
-    }
-
-    pawn_moves_str.push_str("];\n");
-    pawn_attacks_str.push_str("];\n");
-
-    (pawn_moves_str, pawn_attacks_str)
 }

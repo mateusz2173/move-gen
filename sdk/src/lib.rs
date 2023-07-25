@@ -3,11 +3,6 @@
 
 pub mod bitboard;
 pub mod fen;
-pub mod genmove_tests;
+pub mod lookup;
 pub mod position;
 pub mod square;
-pub mod lookup;
-
-extern crate enum_index;
-#[macro_use]
-extern crate enum_index_derive;

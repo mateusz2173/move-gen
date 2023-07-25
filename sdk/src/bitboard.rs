@@ -8,7 +8,7 @@ use std::{
 };
 
 use colored::Colorize;
-use enum_index::IndexEnum;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::square::{File, Square};
 
@@ -17,8 +17,10 @@ pub struct Bitboard(pub u64);
 
 pub const EMPTY: Bitboard = Bitboard(0);
 
-#[derive(IndexEnum)]
+#[derive(IntoPrimitive, TryFromPrimitive)]
+#[repr(u8)]
 pub enum Direction {
+    #[num_enum(default)]
     North,
     South,
     East,
@@ -42,12 +44,16 @@ impl Bitboard {
 
     #[must_use]
     pub fn lsb(&self) -> Square {
-        Square::index_enum(self.0.trailing_zeros() as usize).unwrap()
+        (self.0.trailing_zeros() as u8)
+            .try_into()
+            .expect("BUG: LSB couldn't be computed from bitboard.")
     }
 
     #[must_use]
     pub fn msb(&self) -> Square {
-        Square::index_enum(63 - self.0.leading_zeros() as usize).unwrap()
+        (63 - self.0.leading_zeros() as u8)
+            .try_into()
+            .expect("BUG: MSB couldn't be computed from bitboard.")
     }
 
     pub fn pop_lsb(&mut self) -> Square {
