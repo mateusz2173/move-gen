@@ -5,7 +5,7 @@ use sdk::{
     lookup::{
         king::gen_king_attacks,
         knights::gen_knight_attacks,
-        pawns::{gen_pawn_attacks, gen_pawn_moves},
+        pawns::{gen_pawn_attacks, gen_single_pawn_moves, gen_double_pawn_moves},
     },
 };
 
@@ -19,7 +19,8 @@ pub struct LookupTables {
     pub knight_attacks: [Bitboard; 64],
     pub king_attacks: [Bitboard; 64],
     pub pawn_attacks: [[Bitboard; 64]; 2],
-    pub pawn_moves: [[Bitboard; 64]; 2],
+    pub pawn_single_moves: [[Bitboard; 64]; 2],
+    pub pawn_double_moves: [[Bitboard; 64]; 2],
 }
 
 #[derive(Clone, Copy)]
@@ -34,7 +35,8 @@ pub fn load_lookup_tables() -> Result<LookupTables> {
         .map_err(|err| anyhow::format_err!("Couldn't load rook magics: {err:?}"))?;
     let (bishop_magics, bishop_moves) = load_bishop_magics()
         .map_err(|err| anyhow::format_err!("Couldn't load bishop magics: {err:?}"))?;
-    let pawn_moves = gen_pawn_moves();
+    let pawn_single_moves = gen_single_pawn_moves();
+    let pawn_double_moves = gen_double_pawn_moves();
     let pawn_attacks = gen_pawn_attacks();
     let knight_attacks = gen_knight_attacks();
     let king_attacks = gen_king_attacks();
@@ -47,7 +49,8 @@ pub fn load_lookup_tables() -> Result<LookupTables> {
         knight_attacks,
         king_attacks,
         pawn_attacks,
-        pawn_moves,
+        pawn_single_moves,
+        pawn_double_moves,
     })
 }
 

@@ -8,6 +8,7 @@ use sdk::{
 
 type Result<T> = std::result::Result<T, anyhow::Error>;
 
+#[derive(Clone)]
 pub struct Move {
     inner: u16,
 }
@@ -283,6 +284,33 @@ impl Move {
         }
 
         mv
+    }
+
+    #[must_use]
+    pub fn to_chess_notation(&self, pos: &Position) -> String {
+        let (piece, color) = pos.piece_at(&self.from()).unwrap_or_else(|| {
+            panic!(
+                "BUG: No piece at from square: {}",
+                self.from().to_string().to_uppercase()
+            )
+        });
+
+        match (piece, color, self.is_capture()) {
+            (Piece::Pawn, _, false) => self.to().to_string(),
+            (Piece::Pawn, _, true) => format!("{}x{}", self.from().file(), self.to()),
+            (piece, Color::White, false) => {
+                format!("{}{}", piece.to_string().to_uppercase(), self.to())
+            }
+            (piece, Color::Black, false) => {
+                format!("{}{}", piece.to_string().to_lowercase(), self.to())
+            }
+            (piece, Color::White, true) => {
+                format!("{}x{}", piece.to_string().to_uppercase(), self.to())
+            }
+            (piece, Color::Black, true) => {
+                format!("{}x{}", piece.to_string().to_lowercase(), self.to())
+            }
+        }
     }
 
     pub fn from(&self) -> Square {

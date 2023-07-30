@@ -6,7 +6,7 @@ use crate::square::Rank;
 use crate::square::Square;
 
 #[must_use]
-pub fn gen_pawn_moves() -> [[Bitboard; 64]; 2] {
+pub fn gen_single_pawn_moves() -> [[Bitboard; 64]; 2] {
     let mut pawn_moves = [[EMPTY; 64]; 2];
     for color in Color::iter() {
         let direction = match color {
@@ -14,14 +14,25 @@ pub fn gen_pawn_moves() -> [[Bitboard; 64]; 2] {
             Color::Black => Direction::South,
         };
 
-        let double_push_rank = match color {
-            Color::White => Rank::R2,
-            Color::Black => Rank::R7,
+        for sq in Square::iter() {
+            pawn_moves[color as usize][sq as usize] |= sq.bitboard().shift(&direction);
+        }
+    }
+    pawn_moves
+}
+
+#[must_use]
+pub fn gen_double_pawn_moves() -> [[Bitboard; 64]; 2] {
+    let mut pawn_moves = [[EMPTY; 64]; 2];
+    for color in Color::iter() {
+        let direction = match color {
+            Color::White => Direction::North,
+            Color::Black => Direction::South,
         };
 
         for sq in Square::iter() {
-            pawn_moves[color as usize][sq as usize] |= sq.bitboard().shift(&direction);
-            if sq.rank() == double_push_rank {
+            let rank = sq.rank();
+            if rank == Rank::R2 || rank == Rank::R7 {
                 pawn_moves[color as usize][sq as usize] |=
                     sq.bitboard().shift(&direction).shift(&direction);
             }

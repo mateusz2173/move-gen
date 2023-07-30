@@ -1,4 +1,4 @@
-use crate::{bitboard::Bitboard, square::Square};
+use crate::{bitboard::Bitboard, square::Square, position::Piece};
 
 const BISHOP_OFFSETS: [(i8, i8); 4] = [(1, 1), (-1, 1), (1, -1), (-1, -1)];
 const ROOK_OFFSETS: [(i8, i8); 4] = [(1, 0), (-1, 0), (0, 1), (0, -1)];
@@ -8,6 +8,16 @@ pub enum Slider {
     Bishop,
     Rook,
     Queen,
+}
+
+impl From<Slider> for Piece {
+    fn from(value: Slider) -> Self {
+        match value {
+            Slider::Bishop => Piece::Bishop,
+            Slider::Rook => Piece::Rook,
+            Slider::Queen => Piece::Queen,
+        }
+    }
 }
 
 impl ToString for Slider {

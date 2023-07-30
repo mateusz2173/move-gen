@@ -192,15 +192,11 @@ impl Position {
     #[must_use]
     pub fn piece_at(&self, square: &Square) -> Option<(Piece, Color)> {
         let square = square.bitboard();
-        for (i, piece_bb) in self.pieces[0].iter().enumerate() {
-            if !(piece_bb & square).is_empty() {
-                return Some((Piece::from(i), Color::White));
-            }
-        }
-
-        for (i, piece_bb) in self.pieces[1].iter().enumerate() {
-            if !(piece_bb & square).is_empty() {
-                return Some((Piece::from(i), Color::Black));
+        for color in [Color::White, Color::Black] {
+            for (i, piece_bb) in self.pieces[color as usize].iter().enumerate() {
+                if !((piece_bb & square).is_empty()) {
+                    return Some((Piece::from(i), Color::White));
+                }
             }
         }
 
