@@ -2,7 +2,17 @@ use std::{fmt::Display, str::FromStr};
 
 use anyhow::anyhow;
 
-use crate::{bitboard::Bitboard, fen::Fen, square::Square};
+use crate::{
+    bitboard::Bitboard,
+    fen::Fen,
+    lookup::{
+        king::mask_king_attacks,
+        knights::mask_knights_attacks,
+        pawns::mask_pawns_attacks,
+        sliders::{mask_slider_attacks_occ, Slider},
+    },
+    square::Square,
+};
 
 #[derive(Debug, Clone)]
 pub struct Position {
@@ -195,12 +205,19 @@ impl Position {
         for color in [Color::White, Color::Black] {
             for (i, piece_bb) in self.pieces[color as usize].iter().enumerate() {
                 if !((piece_bb & square).is_empty()) {
-                    return Some((Piece::from(i), Color::White));
+                    return Some((Piece::from(i), color));
                 }
             }
         }
 
         None
+    }
+
+    #[must_use]
+    pub fn attacked_squares(&self, color: &Color) -> Bitboard {
+        let mut result = Bitboard(0);
+
+        todo!()
     }
 }
 
@@ -220,6 +237,7 @@ impl From<usize> for Piece {
 
 impl Default for Position {
     fn default() -> Self {
+        dbg!("DEFAULT");
         Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string())
             .expect("Invalid starting FEN.")
     }
@@ -299,18 +317,18 @@ impl Piece {
     #[must_use]
     pub fn to_utf8_symbol(&self, color: Color) -> &'static str {
         match (self, color) {
-            (Piece::Pawn, Color::Black) => "♙",
-            (Piece::Knight, Color::Black) => "♘",
-            (Piece::Bishop, Color::Black) => "♗",
-            (Piece::Rook, Color::Black) => "♖",
-            (Piece::Queen, Color::Black) => "♕",
-            (Piece::King, Color::Black) => "♔",
-            (Piece::Pawn, Color::White) => "♟",
-            (Piece::Knight, Color::White) => "♞",
-            (Piece::Bishop, Color::White) => "♝",
-            (Piece::Rook, Color::White) => "♜",
-            (Piece::Queen, Color::White) => "♛",
-            (Piece::King, Color::White) => "♚",
+            (Piece::Pawn, Color::White) => "♙",
+            (Piece::Pawn, Color::Black) => "♟",
+            (Piece::Knight, Color::White) => "♘",
+            (Piece::Knight, Color::Black) => "♞",
+            (Piece::Bishop, Color::White) => "♗",
+            (Piece::Bishop, Color::Black) => "♝",
+            (Piece::Rook, Color::White) => "♖",
+            (Piece::Rook, Color::Black) => "♜",
+            (Piece::Queen, Color::White) => "♕",
+            (Piece::Queen, Color::Black) => "♛",
+            (Piece::King, Color::White) => "♔",
+            (Piece::King, Color::Black) => "♚",
         }
     }
 }

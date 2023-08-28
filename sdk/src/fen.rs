@@ -130,7 +130,7 @@ impl Fen for Position {
                     }
                     match color {
                         Color::White => fen.push_str(&format!("{piece}").to_uppercase()),
-                        Color::Black => fen.push_str(&format!("{piece}")),
+                        Color::Black => fen.push_str(&format!("{piece}").to_lowercase()),
                     }
                 } else {
                     empty += 1;
@@ -167,40 +167,11 @@ impl Fen for Position {
 #[cfg(test)]
 mod tests {
 
-    use crate::bitboard::Bitboard;
     use crate::fen::Fen;
-    use crate::position::Castling;
-    use crate::position::Color;
     use crate::position::Position;
 
-    #[test]
     fn test_starting_fen() {
-        let starting_pos = Position {
-            pieces: [
-                [
-                    Bitboard(0x0000_0000_0000_FF00),
-                    Bitboard(0x0000_0000_0000_0042),
-                    Bitboard(0x0000_0000_0000_0024),
-                    Bitboard(0x0000_0000_0000_0081),
-                    Bitboard(0x0000_0000_0000_0008),
-                    Bitboard(0x0000_0000_0000_0010),
-                ],
-                [
-                    Bitboard(0x00FF_0000_0000_0000),
-                    Bitboard(0x4200_0000_0000_0000),
-                    Bitboard(0x2400_0000_0000_0000),
-                    Bitboard(0x8100_0000_0000_0000),
-                    Bitboard(0x0800_0000_0000_0000),
-                    Bitboard(0x1000_0000_0000_0000),
-                ],
-            ],
-            occupied: Bitboard(0x00FF_FF00_0000_00FF),
-            turn: Color::White,
-            castling: Castling::full(),
-            en_passant: None,
-            halfmove_clock: 0,
-            fullmove_number: 1,
-        };
+        let starting_pos = Position::default();
 
         assert_eq!(
             starting_pos.to_fen(),

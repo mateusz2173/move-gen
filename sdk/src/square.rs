@@ -34,6 +34,23 @@ impl Display for File {
     }
 }
 
+impl Display for Rank {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let c = match self {
+            Rank::R1 => '1',
+            Rank::R2 => '2',
+            Rank::R3 => '3',
+            Rank::R4 => '4',
+            Rank::R5 => '5',
+            Rank::R6 => '6',
+            Rank::R7 => '7',
+            Rank::R8 => '8',
+        };
+
+        write!(f, "{c}")
+    }
+}
+
 impl File {
     #[must_use]
     pub const fn bitboard(self) -> Bitboard {

@@ -58,3 +58,17 @@ pub fn gen_pawn_attacks() -> [[Bitboard; 64]; 2] {
 
     pawn_attacks
 }
+
+#[must_use]
+pub fn mask_pawns_attacks(bb: Bitboard, color: &Color) -> Bitboard {
+    let (first_dir, second_dir) = match color {
+        Color::White => (Direction::NorthEast, Direction::NorthWest),
+        Color::Black => (Direction::SouthEast, Direction::SouthWest),
+    };
+
+    let mut attacks = EMPTY;
+    attacks |= bb.shift(&first_dir);
+    attacks |= bb.shift(&second_dir);
+
+    attacks
+}

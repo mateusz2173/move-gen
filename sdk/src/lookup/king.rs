@@ -17,7 +17,8 @@ pub fn gen_king_attacks() -> [Bitboard; 64] {
     king_attacks
 }
 
-fn mask_king_attacks(king: Bitboard) -> Bitboard {
+#[must_use]
+pub fn mask_king_attacks(king: Bitboard) -> Bitboard {
     let mut attacks = king;
     attacks |= attacks << 1 & !FILE_H;
     attacks |= attacks >> 1 & !FILE_A;

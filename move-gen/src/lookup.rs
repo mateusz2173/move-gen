@@ -1,11 +1,11 @@
-use std::io::Read;
+use std::{io::Read, path::Path};
 
 use sdk::{
     bitboard::Bitboard,
     lookup::{
         king::gen_king_attacks,
         knights::gen_knight_attacks,
-        pawns::{gen_pawn_attacks, gen_single_pawn_moves, gen_double_pawn_moves},
+        pawns::{gen_double_pawn_moves, gen_pawn_attacks, gen_single_pawn_moves}, in_between::generate_in_between_squares,
     },
 };
 
@@ -21,6 +21,7 @@ pub struct LookupTables {
     pub pawn_attacks: [[Bitboard; 64]; 2],
     pub pawn_single_moves: [[Bitboard; 64]; 2],
     pub pawn_double_moves: [[Bitboard; 64]; 2],
+    pub in_between: [[Bitboard; 64]; 64],
 }
 
 #[derive(Clone, Copy)]
@@ -40,6 +41,7 @@ pub fn load_lookup_tables() -> Result<LookupTables> {
     let pawn_attacks = gen_pawn_attacks();
     let knight_attacks = gen_knight_attacks();
     let king_attacks = gen_king_attacks();
+    let in_between = generate_in_between_squares();
 
     Ok(LookupTables {
         rook_magics,
@@ -51,6 +53,7 @@ pub fn load_lookup_tables() -> Result<LookupTables> {
         pawn_attacks,
         pawn_single_moves,
         pawn_double_moves,
+        in_between,
     })
 }
 
@@ -61,7 +64,12 @@ pub fn load_rook_magics() -> Result<([MagicEntry; 64], [[Bitboard; 1 << 12]; 64]
         index_bits: 0,
     }; 64];
 
-    let mut file = std::fs::File::open("rook_magics.bin")?;
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .join("rook_magics.bin");
+
+    let mut file = std::fs::File::open(path)?;
 
     for magic in magics.iter_mut() {
         let mut mask_bytes = [0u8; 8];
@@ -102,7 +110,12 @@ pub fn load_bishop_magics() -> Result<([MagicEntry; 64], [[Bitboard; 1 << 9]; 64
         index_bits: 0,
     }; 64];
 
-    let mut file = std::fs::File::open("bishop_magics.bin")?;
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .join("bishop_magics.bin");
+
+    let mut file = std::fs::File::open(path)?;
 
     for magic in magics.iter_mut() {
         let mut mask_bytes = [0u8; 8];

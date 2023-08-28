@@ -1,14 +1,14 @@
 use core::fmt;
-use std::fmt::Formatter;
+use std::{collections::HashSet, fmt::Formatter};
 
 use sdk::{
     position::{CastlingKind, Color, Piece, Position},
-    square::Square,
+    square::{File, Square},
 };
 
 type Result<T> = std::result::Result<T, anyhow::Error>;
 
-#[derive(Clone)]
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct Move {
     inner: u16,
 }
@@ -274,43 +274,33 @@ pub enum MoveKind {
 }
 
 impl Move {
-    pub fn new(from: Square, to: Square, promotion: Option<Piece>) -> Move {
+    pub fn new(from: Square, to: Square, promotion: Option<Piece>, kind: &MoveKind) -> Move {
         let mut inner = 0;
         inner |= from as u16;
         inner |= (to as u16) << 6;
         let mut mv = Move { inner };
-        if let Some(promotion) = promotion {
-            mv.set_promotion(promotion);
+
+        match kind {
+            MoveKind::Capture | MoveKind::EnPassant => {
+                mv.set_capture();
+            }
+            MoveKind::Castling => {
+                if to.file() == File::C {
+                    mv.set_queen_castle();
+                } else if to.file() == File::G {
+                    mv.set_king_castle();
+                }
+            }
+            MoveKind::Promotion => {
+                mv.set_promotion(promotion.expect("BUG: No promotion piece"));
+            }
+            MoveKind::PromotionCapture => {
+                mv.set_promotion_capture(promotion.expect("BUG: No promotion piece"));
+            }
+            _ => {}
         }
 
         mv
-    }
-
-    #[must_use]
-    pub fn to_chess_notation(&self, pos: &Position) -> String {
-        let (piece, color) = pos.piece_at(&self.from()).unwrap_or_else(|| {
-            panic!(
-                "BUG: No piece at from square: {}",
-                self.from().to_string().to_uppercase()
-            )
-        });
-
-        match (piece, color, self.is_capture()) {
-            (Piece::Pawn, _, false) => self.to().to_string(),
-            (Piece::Pawn, _, true) => format!("{}x{}", self.from().file(), self.to()),
-            (piece, Color::White, false) => {
-                format!("{}{}", piece.to_string().to_uppercase(), self.to())
-            }
-            (piece, Color::Black, false) => {
-                format!("{}{}", piece.to_string().to_lowercase(), self.to())
-            }
-            (piece, Color::White, true) => {
-                format!("{}x{}", piece.to_string().to_uppercase(), self.to())
-            }
-            (piece, Color::Black, true) => {
-                format!("{}x{}", piece.to_string().to_lowercase(), self.to())
-            }
-        }
     }
 
     pub fn from(&self) -> Square {
@@ -393,7 +383,7 @@ impl Move {
         None
     }
 
-    pub fn set_promotion(&mut self, promotion: Piece) {
+    fn set_promotion(&mut self, promotion: Piece) {
         self.inner &= 0b0000111111111111;
         self.inner |= match promotion {
             Piece::Knight => 0b0001000000000000,
@@ -404,31 +394,36 @@ impl Move {
         }
     }
 
-    pub fn set_capture(&mut self) {
+    fn set_capture(&mut self) {
         self.inner &= 0b0000111111111111;
         self.inner |= 0b0010000000000000;
     }
 
-    pub fn set_enpass_capture(&mut self) {
+    fn set_enpass_capture(&mut self) {
         self.inner &= 0b0000111111111111;
         self.inner |= 0b1010000000000000;
     }
 
-    pub fn set_quiet(&mut self) {
+    fn set_promotion_capture(&mut self, promotion: Piece) {
+        self.set_promotion(promotion);
+        self.inner |= 0b0010000000000000;
+    }
+
+    fn set_quiet(&mut self) {
         self.inner &= 0b0000111111111111;
     }
 
-    pub fn set_double_pawn_push(&mut self) {
+    fn set_double_pawn_push(&mut self) {
         self.inner &= 0b0000111111111111;
         self.inner |= 0b1000000000000000;
     }
 
-    pub fn set_king_castle(&mut self) {
+    fn set_king_castle(&mut self) {
         self.inner &= 0b0000111111111111;
         self.inner |= 0b0100000000000000;
     }
 
-    pub fn set_queen_castle(&mut self) {
+    fn set_queen_castle(&mut self) {
         self.inner &= 0b0000111111111111;
         self.inner |= 0b1100000000000000;
     }

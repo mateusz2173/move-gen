@@ -69,7 +69,8 @@ impl Slider {
     }
 }
 
-fn mask_slider_attacks_occ(slider: Slider, occ: Bitboard, sq: Square) -> Bitboard {
+#[must_use]
+pub fn mask_slider_attacks_occ(slider: Slider, occ: Bitboard, sq: Square) -> Bitboard {
     let mut attacks = Bitboard::empty();
 
     let offsets = match slider {
