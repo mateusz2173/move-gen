@@ -7,7 +7,10 @@ use sdk::{
 };
 use serde::Deserialize;
 
-use crate::{utils::logger::configure_logger, generators::movegen::MoveGen};
+use crate::{
+    generators::movegen::MoveGen,
+    utils::{chess_notation::ChessNotation, logger::configure_logger},
+};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -68,8 +71,10 @@ fn test_pawns() {
             .map(|expected| expected.r#move.clone())
             .collect();
 
-        let actual_moves: HashSet<String> =
-            move_gen.generate_legal_moves(&pos).chess_notation_moves();
+        let actual_moves: HashSet<String> = move_gen
+            .generate_legal_moves(&pos)
+            .map(|mv| move_gen.to_algebraic_notation(&pos, &mv))
+            .collect();
 
         let expected_not_actual: HashSet<String> =
             expected_moves.difference(&actual_moves).cloned().collect();

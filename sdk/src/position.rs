@@ -5,12 +5,6 @@ use anyhow::anyhow;
 use crate::{
     bitboard::Bitboard,
     fen::Fen,
-    lookup::{
-        king::mask_king_attacks,
-        knights::mask_knights_attacks,
-        pawns::mask_pawns_attacks,
-        sliders::{mask_slider_attacks_occ, Slider},
-    },
     square::Square,
 };
 
@@ -211,13 +205,6 @@ impl Position {
         }
 
         None
-    }
-
-    #[must_use]
-    pub fn attacked_squares(&self, color: &Color) -> Bitboard {
-        let mut result = Bitboard(0);
-
-        todo!()
     }
 }
 

@@ -1,62 +1,33 @@
-use std::collections::HashSet;
-
 use sdk::{
     position::{Piece, Position},
     square::Square,
 };
 
-use super::r#move::Move;
+use crate::{generators::movegen::MoveGen, r#move::r#move::Move};
 
-pub struct MoveSet<'a> {
-    position: &'a Position,
-    moves: HashSet<Move>,
+pub trait ChessNotation {
+    fn find_ambiguous_piece(&self, pos: &Position, mv: &Move) -> Option<Square>;
+    fn to_algebraic_notation(&self, pos: &Position, mv: &Move) -> String;
 }
 
-impl<'a> MoveSet<'a> {
-    pub fn new(pos: &'a Position, moves: impl Iterator<Item = Move> + 'a) -> Self {
-        Self {
-            position: pos,
-            moves: moves.collect(),
-        }
+impl ChessNotation for MoveGen {
+    fn find_ambiguous_piece(&self, pos: &Position, mv: &Move) -> Option<Square> {
+        let from_square = mv.from();
+        let from_piece = pos.piece_at(&from_square);
+
+        self.attacks_to_sq(pos, mv.to())
+            .into_iter()
+            .find(|sq| (sq != &from_square) && pos.piece_at(sq) == from_piece)
     }
 
-    pub fn moves(self) -> HashSet<Move> {
-        self.moves
-    }
-
-    pub fn chess_notation_moves(self) -> HashSet<String> {
-        self.moves
-            .iter()
-            .map(|mv| self.to_algebraic_notation(mv))
-            .collect()
-    }
-
-    pub fn position(&self) -> &Position {
-        self.position
-    }
-
-    pub fn find_ambiguous_piece(&self, mv: &Move) -> Option<Square> {
-        self.moves
-            .iter()
-            .find(|other| {
-                other.from() != mv.from()
-                    && other.to() == mv.to()
-                    && self.position.piece_at(&other.from()) == self.position.piece_at(&mv.from())
-            })
-            .map(|other| other.from())
-    }
-
-    pub fn to_algebraic_notation(&self, mv: &Move) -> String {
-        let (piece, _) = self
-            .position
-            .piece_at(&mv.from())
-            .expect("No piece at from square.");
+    fn to_algebraic_notation(&self, pos: &Position, mv: &Move) -> String {
+        let (piece, _) = pos.piece_at(&mv.from()).expect("No piece at from square.");
 
         let piece_char = piece.to_string().to_uppercase();
 
         let is_pawn = piece == Piece::Pawn;
 
-        let ambiguous = self.find_ambiguous_piece(mv);
+        let ambiguous = self.find_ambiguous_piece(pos, mv);
 
         let from_file = if ambiguous.is_some_and(|sq| sq.file() != mv.from().file()) {
             mv.from().file().to_string()

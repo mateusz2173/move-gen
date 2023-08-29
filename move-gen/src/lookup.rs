@@ -3,9 +3,10 @@ use std::{io::Read, path::Path};
 use sdk::{
     bitboard::Bitboard,
     lookup::{
+        in_between::generate_in_between_squares,
         king::gen_king_attacks,
         knights::gen_knight_attacks,
-        pawns::{gen_double_pawn_moves, gen_pawn_attacks, gen_single_pawn_moves}, in_between::generate_in_between_squares,
+        pawns::{gen_double_pawn_moves, gen_pawn_attacks, gen_single_pawn_moves},
     },
 };
 

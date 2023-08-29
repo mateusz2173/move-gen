@@ -4,7 +4,10 @@ use sdk::{
     square::{Rank, Square},
 };
 
-use crate::{r#move::r#move::{Move, MoveKind}, generators::movegen::MoveGen};
+use crate::{
+    generators::movegen::MoveGen,
+    r#move::r#move::{Move, MoveKind},
+};
 
 use super::simple_move_generator::SimpleMoveGenerator;
 
@@ -85,7 +88,7 @@ impl PawnMoveGenerator for MoveGen {
 
         let iter = bb.into_iter().flat_map(move |from_square| {
             let attacks = if let Some(en_passant) = pos.en_passant {
-                self.pawn_attacks(color, from_square) & enemy_occ | en_passant
+                (self.pawn_attacks(color, from_square) & enemy_occ) | en_passant
             } else {
                 self.pawn_attacks(color, from_square) & enemy_occ
             };
@@ -95,6 +98,18 @@ impl PawnMoveGenerator for MoveGen {
                     Color::White => Rank::R8,
                     Color::Black => Rank::R1,
                 };
+
+                if let Some(en_passant) = pos.en_passant {
+                    if target_square == en_passant {
+                        return vec![Move::new(
+                            from_square,
+                            target_square,
+                            None,
+                            &MoveKind::EnPassant,
+                        )]
+                        .into_iter();
+                    }
+                }
 
                 if target_square.rank() == promotion_rank {
                     generate_promotions_vec(from_square, target_square, MoveKind::PromotionCapture)

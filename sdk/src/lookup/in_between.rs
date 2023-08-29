@@ -15,9 +15,6 @@ pub fn generate_in_between_squares() -> [[Bitboard; 64]; 64] {
 
 #[allow(arithmetic_overflow)]
 fn between(sq1: u8, sq2: u8) -> u64 {
-
-    0
-    /*
     let sq1 = u64::from(sq1);
     let sq2 = u64::from(sq2);
 
@@ -28,15 +25,15 @@ fn between(sq1: u8, sq2: u8) -> u64 {
 
     let btwn: u64 = (m1 << sq1) ^ (m1 << sq2);
 
-    let file: u64 = (sq2 & 7) - (sq1 & 7);
-    let rank: u64 = ((sq2 | 7) - sq1) >> 3;
+    let file: u64 = (sq2 & 7).wrapping_sub(sq1 & 7);
+    let rank: u64 = ((sq2 | 7).wrapping_sub(sq1)) >> 3;
 
-    let mut line = ((file & 7).overflowing_sub(1).0) & a2a7; 
-    line += 2 * (((rank & 7) - 1) >> 58);
-    line += (((rank - file) & 15) - 1) & b2g7;
-    line += (((rank + file) & 15) - 1) & h1b7;
+    let mut line = ((file & 7).wrapping_sub(1)) & a2a7; 
+    line += 2 * (((rank & 7).wrapping_sub(1)) >> 58);
+    line += (((rank.wrapping_sub(file)) & 15).wrapping_sub(1)) & b2g7;
+    line += (((rank.wrapping_add(file)) & 15).wrapping_sub(1)) & h1b7;
     let mut line = Into::<u64>::into(line);
-    line *= btwn & btwn.checked_neg().unwrap();
+    line = line.wrapping_mul(btwn & btwn.wrapping_neg());
 
-    line & btwn */
+    line & btwn 
 }
