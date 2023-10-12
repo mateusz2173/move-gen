@@ -5,7 +5,7 @@ use sdk::{
 
 use crate::{
     generators::movegen::MoveGen,
-    r#move::r#move::{Move, MoveKind},
+    r#move::{Move, MoveKind},
 };
 
 use super::simple_move_generator::SimpleMoveGenerator;

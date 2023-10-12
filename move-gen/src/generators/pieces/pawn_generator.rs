@@ -6,7 +6,7 @@ use sdk::{
 
 use crate::{
     generators::movegen::MoveGen,
-    r#move::r#move::{Move, MoveKind},
+    r#move::{Move, MoveKind},
 };
 
 use super::simple_move_generator::SimpleMoveGenerator;
@@ -88,7 +88,7 @@ impl PawnMoveGenerator for MoveGen {
 
         let iter = bb.into_iter().flat_map(move |from_square| {
             let attacks = if let Some(en_passant) = pos.en_passant {
-                (self.pawn_attacks(color, from_square) & enemy_occ) | en_passant
+                self.pawn_attacks(color, from_square) & (enemy_occ | en_passant)
             } else {
                 self.pawn_attacks(color, from_square) & enemy_occ
             };
@@ -101,6 +101,19 @@ impl PawnMoveGenerator for MoveGen {
 
                 if let Some(en_passant) = pos.en_passant {
                     if target_square == en_passant {
+                        // A hack to check if the move is legal in a very specific, rare occuring
+                        // en-passant case, thus we allow ourselves to clone the position and do more
+                        // calculations.
+                        let mut cloned = pos.clone();
+                        let captured_square = match color {
+                            Color::White => en_passant.bitboard().shift(&Direction::South),
+                            Color::Black => en_passant.bitboard().shift(&Direction::North),
+                        };
+                        cloned.occupied &= !(from_square.bitboard() | captured_square);
+                        if self.is_check(&cloned) {
+                            return vec![].into_iter();
+                        }
+
                         return vec![Move::new(
                             from_square,
                             target_square,

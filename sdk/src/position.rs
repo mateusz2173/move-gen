@@ -276,6 +276,7 @@ impl Display for Piece {
 
 impl Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f)?;
         for rank in (0..8u8).rev() {
             for file in 0..8u8 {
                 let square: Square = (rank * 8 + file)
@@ -304,18 +305,18 @@ impl Piece {
     #[must_use]
     pub fn to_utf8_symbol(&self, color: Color) -> &'static str {
         match (self, color) {
-            (Piece::Pawn, Color::White) => "♙",
-            (Piece::Pawn, Color::Black) => "♟",
-            (Piece::Knight, Color::White) => "♘",
-            (Piece::Knight, Color::Black) => "♞",
-            (Piece::Bishop, Color::White) => "♗",
-            (Piece::Bishop, Color::Black) => "♝",
-            (Piece::Rook, Color::White) => "♖",
-            (Piece::Rook, Color::Black) => "♜",
-            (Piece::Queen, Color::White) => "♕",
-            (Piece::Queen, Color::Black) => "♛",
-            (Piece::King, Color::White) => "♔",
-            (Piece::King, Color::Black) => "♚",
+            (Piece::Pawn, Color::Black) => "♙",
+            (Piece::Pawn, Color::White) => "♟",
+            (Piece::Knight, Color::Black) => "♘",
+            (Piece::Knight, Color::White) => "♞",
+            (Piece::Bishop, Color::Black) => "♗",
+            (Piece::Bishop, Color::White) => "♝",
+            (Piece::Rook, Color::Black) => "♖",
+            (Piece::Rook, Color::White) => "♜",
+            (Piece::Queen, Color::Black) => "♕",
+            (Piece::Queen, Color::White) => "♛",
+            (Piece::King, Color::Black) => "♔",
+            (Piece::King, Color::White) => "♚",
         }
     }
 }
@@ -355,5 +356,13 @@ impl Color {
     #[must_use]
     pub fn iter() -> ColorIterator {
         ColorIterator { idx: 0 }
+    }
+
+    #[must_use]
+    pub fn enemy(&self) -> Color {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
     }
 }

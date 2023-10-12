@@ -20,10 +20,10 @@ pub fn gen_king_attacks() -> [Bitboard; 64] {
 #[must_use]
 pub fn mask_king_attacks(king: Bitboard) -> Bitboard {
     let mut attacks = king;
-    attacks |= attacks << 1 & !FILE_H;
-    attacks |= attacks >> 1 & !FILE_A;
-    attacks |= attacks << 8 & !RANK_1;
-    attacks |= attacks >> 8 & !RANK_8;
+    attacks |= (attacks << 1) & !FILE_A;
+    attacks |= (attacks >> 1) & !FILE_H;
+    attacks |= (attacks << 8) & !RANK_1;
+    attacks |= (attacks >> 8) & !RANK_8;
 
     attacks ^ king
 }

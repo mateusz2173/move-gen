@@ -11,7 +11,7 @@ use sdk::{
     bitboard::Bitboard,
     fen::Fen,
     position::{Color, Piece, Position},
-    square::Square,
+    square::Square, lookup::king::mask_king_attacks,
 };
 use xray::XRayGenerator;
 
@@ -26,6 +26,8 @@ fn run() {}
 
 fn main() {
     utils::logger::configure_logger();
+
+    dbg!(mask_king_attacks(Square::E6.bitboard()));
 
     let child = thread::Builder::new()
         .stack_size(32 * 1024 * 1024)

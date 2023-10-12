@@ -15,6 +15,7 @@ use crate::{
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct Test {
+    #[serde(default)]
     description: String,
     test_cases: Vec<TestCase>,
 }
@@ -27,6 +28,7 @@ struct TestCase {
 
 #[derive(Deserialize, Debug)]
 struct StartPosition {
+    #[serde(default)]
     description: String,
     fen: String,
 }
@@ -51,16 +53,26 @@ fn test_all() {
 
     let child = thread::Builder::new()
         .stack_size(32 * 1024 * 1024)
-        .spawn(test_pawns)
+        .spawn(run_all_tests)
         .unwrap();
 
     // Wait for thread to join
     child.join().unwrap();
 }
 
-fn test_pawns() {
+fn run_all_tests() {
+    let test_dir = std::fs::read_dir("src/test_cases").unwrap();
+
+    for file in test_dir {
+        let file_name = file.unwrap().file_name().into_string().unwrap();
+        info!("Running tests for {}", file_name);
+        run_test(file_name);
+    }
+}
+
+fn run_test(json_name: String) {
     let move_gen = MoveGen::new();
-    let test_cases = load_test("pawns.json".to_string());
+    let test_cases = load_test(json_name.clone());
 
     for (idx, test_case) in test_cases.test_cases.iter().enumerate() {
         let pos = Position::from_fen(test_case.start.fen.clone()).unwrap();
@@ -98,6 +110,6 @@ fn test_pawns() {
             test_case.start.description,
             test_case.start.fen
         );
-        info!("[Pawns-{}] passed.", idx + 1);
+        info!("[{} ({})] passed.", json_name, idx + 1);
     }
 }
