@@ -15,7 +15,7 @@ pub struct Position {
     pub turn: Color,
     pub castling: Castling,
     pub en_passant: Option<Square>,
-    pub halfmove_clock: u8,
+    pub halfmove_clock: u16,
     pub fullmove_number: u16,
 }
 
@@ -135,6 +135,15 @@ impl Castling {
         }
     }
 
+    pub fn remove_castling_kind(&mut self, castling_kind: &CastlingKind) {
+        match castling_kind {
+            CastlingKind::WhiteKingside => self.inner &= 0b0111,
+            CastlingKind::WhiteQueenside => self.inner &= 0b1011,
+            CastlingKind::BlackKingside => self.inner &= 0b1101,
+            CastlingKind::BlackQueenside => self.inner &= 0b1110,
+        }
+    }
+
     pub fn add_castling_kind(&mut self, castling_kind: &CastlingKind) {
         match castling_kind {
             CastlingKind::WhiteKingside => self.inner |= 0b1000,
@@ -224,7 +233,6 @@ impl From<usize> for Piece {
 
 impl Default for Position {
     fn default() -> Self {
-        dbg!("DEFAULT");
         Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string())
             .expect("Invalid starting FEN.")
     }
@@ -302,6 +310,18 @@ impl Display for Position {
 }
 
 impl Piece {
+    #[must_use]
+    pub const fn all() -> [Piece; 6] {
+        [
+            Piece::Pawn,
+            Piece::Knight,
+            Piece::Bishop,
+            Piece::Rook,
+            Piece::Queen,
+            Piece::King,
+        ]
+    }
+
     #[must_use]
     pub fn to_utf8_symbol(&self, color: Color) -> &'static str {
         match (self, color) {

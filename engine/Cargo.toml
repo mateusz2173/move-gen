@@ -1,0 +1,10 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+itertools = "0.11.0"
+move_gen = { path = "../move-gen" }
+sdk = { path = "../sdk" }
+timeit = "0.1.2"

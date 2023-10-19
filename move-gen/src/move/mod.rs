@@ -50,11 +50,23 @@ impl MakeMove for Position {
         let to = mv.to();
         let color = self.turn;
 
+        for (rook_sq, kind) in [
+            (Square::A1, CastlingKind::WhiteQueenside),
+            (Square::H1, CastlingKind::WhiteKingside),
+            (Square::A8, CastlingKind::BlackQueenside),
+            (Square::H8, CastlingKind::BlackKingside),
+        ]
+        .iter()
+        {
+            if mv.from() == *rook_sq || mv.to() == *rook_sq {
+                self.castling.remove_castling_kind(kind);
+            }
+        }
+
+        let (from_piece, from_color) = self.remove_piece_at(&from).expect("BUG: No piece at from square");
+
         let captured = match mv.kind() {
             MoveKind::Capture | MoveKind::Quiet => {
-                let (from_piece, from_color) = self
-                    .remove_piece_at(&from)
-                    .expect("BUG: No piece at from square");
                 let captured = self.remove_piece_at(&to);
 
                 self.add_piece_at(to, from_piece, from_color)?;
@@ -62,10 +74,6 @@ impl MakeMove for Position {
                 captured
             }
             MoveKind::EnPassant => {
-                let (from_piece, from_color) = self
-                    .remove_piece_at(&from)
-                    .expect("BUG: No piece at from square");
-
                 let captured_sq = mv
                     .to()
                     .offset(if color == Color::White { -1 } else { 1 }, 0)
@@ -77,34 +85,26 @@ impl MakeMove for Position {
 
                 self.add_piece_at(to, from_piece, from_color)?;
 
-                Some(captured) 
+                Some(captured)
             }
             MoveKind::Castling => {
                 let castling = mv
                     .castling_kind(&self.turn)
                     .expect("BUG: Move does not castle.");
 
-                let (rook_from, king_from) = castling.from_squares();
+                let (rook_from, _) = castling.from_squares();
                 let (rook_to, king_to) = castling.target_squares();
-
-                let (king, color) = self
-                    .remove_piece_at(&king_from)
-                    .expect("BUG: No piece at king from square");
 
                 let (rook, _) = self
                     .remove_piece_at(&rook_from)
                     .expect("BUG: No piece at rook from square");
 
-                self.add_piece_at(king_to, king, color)?;
-                self.add_piece_at(rook_to, rook, color)?;
+                self.add_piece_at(king_to, from_piece, from_color)?;
+                self.add_piece_at(rook_to, rook, from_color)?;
 
                 None
             }
             MoveKind::Promotion | MoveKind::PromotionCapture => {
-                let (_, from_color) = self
-                    .remove_piece_at(&from)
-                    .expect("BUG: No piece at from square");
-
                 let promotion = mv.promotion().expect("BUG: No promotion piece");
                 let captured = self.remove_piece_at(&to);
 
@@ -113,9 +113,6 @@ impl MakeMove for Position {
                 captured
             }
             MoveKind::DoublePawnPush => {
-                let (from_piece, from_color) = self
-                    .remove_piece_at(&from)
-                    .expect("BUG: No piece at from square");
                 let captured = self.remove_piece_at(&to);
 
                 self.add_piece_at(to, from_piece, from_color)?;
@@ -133,8 +130,12 @@ impl MakeMove for Position {
         .map(|(piece, _)| piece);
 
         self.occupied = self.occupation(&Color::White) | self.occupation(&Color::Black);
-        self.halfmove_clock += 1;
         self.en_passant = None;
+        self.halfmove_clock = if captured.is_some() || from_piece == Piece::Pawn {
+            0
+        } else {
+            self.halfmove_clock + 1
+        };
         let color = self.swap_turn();
         if color == Color::White {
             self.fullmove_number += 1;
@@ -394,8 +395,8 @@ impl Move {
         self.inner |= match promotion {
             Piece::Knight => 0b1000000000000000,
             Piece::Bishop => 0b1001000000000000,
-            Piece::Rook =>   0b1010000000000000,
-            Piece::Queen =>  0b1011000000000000,
+            Piece::Rook => 0b1010000000000000,
+            Piece::Queen => 0b1011000000000000,
             _ => panic!("Invalid promotion: {promotion}"),
         }
     }

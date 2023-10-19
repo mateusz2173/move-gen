@@ -21,19 +21,3 @@ pub mod utils;
 pub mod xray;
 pub mod r#move;
 pub mod generators;
-
-fn run() {}
-
-fn main() {
-    utils::logger::configure_logger();
-
-    dbg!(mask_king_attacks(Square::E6.bitboard()));
-
-    let child = thread::Builder::new()
-        .stack_size(32 * 1024 * 1024)
-        .spawn(run)
-        .unwrap();
-
-    // Wait for thread to join
-    child.join().unwrap();
-}

@@ -3,5 +3,6 @@
 members = [
     "sdk",
     "move-gen",
-    "magic"
+    "magic",
+    "engine"
 ]
