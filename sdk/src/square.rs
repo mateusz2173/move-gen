@@ -78,7 +78,7 @@ pub enum Rank {
     R8,
 }
 
-#[derive(IntoPrimitive, TryFromPrimitive, Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(IntoPrimitive, TryFromPrimitive, Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd, Hash)]
 #[repr(u8)]
 #[rustfmt::skip]
 pub enum Square {

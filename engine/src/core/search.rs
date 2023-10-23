@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use move_gen::r#move::{MakeMove, Move};
-use sdk::position::{Position, Color};
+use sdk::position::{Color, Position};
 
 use super::{evaluate::Evaluate, Engine};
 
@@ -31,16 +31,13 @@ fn minmax(
     let moves = engine.move_gen.generate_legal_moves(position).collect_vec();
 
     if position.halfmove_clock >= 100 {
-        println!("Draw!");
         return (0.0, None);
     }
 
     if moves.is_empty() {
         if engine.move_gen.is_check(position) {
-            println!("Checkmate!");
             return (if maximizing_player { -1000.0 } else { 1000.0 }, None);
         } else {
-            println!("Stalemate!");
             return (0.0, None);
         }
     }
@@ -51,9 +48,15 @@ fn minmax(
 
         for mv in moves {
             let mut pos = position.clone();
-            pos.make_move(&mv).unwrap();
+            engine.move_list.push(mv.clone());
 
-            let (score, _) = minmax(engine, &pos, depth - 1, false);
+            pos.make_move(&mv).unwrap();
+            let (score, _) = if engine.move_list.count_occurrences(&mv) >= 2 {
+                (0.0, None)
+            } else {
+                minmax(engine, &pos, depth - 1, false)
+            };
+            engine.move_list.pop();
 
             if score > best_score {
                 best_score = score;
@@ -68,9 +71,15 @@ fn minmax(
 
         for mv in moves {
             let mut pos = position.clone();
-            pos.make_move(&mv).unwrap();
+            engine.move_list.push(mv.clone());
 
-            let (score, _) = minmax(engine, &pos, depth - 1, true);
+            pos.make_move(&mv).unwrap();
+            let (score, _) = if engine.move_list.count_occurrences(&mv) >= 2 {
+                (0.0, None)
+            } else {
+                minmax(engine, &pos, depth - 1, true)
+            };
+            engine.move_list.pop();
 
             if score < best_score {
                 best_score = score;

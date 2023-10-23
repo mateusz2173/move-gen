@@ -1,6 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use anyhow::anyhow;
+use derivative::Derivative;
 
 use crate::{
     bitboard::Bitboard,
@@ -8,14 +9,22 @@ use crate::{
     square::Square,
 };
 
+#[derive(Derivative)]
 #[derive(Debug, Clone)]
+#[derivative(Hash)]
 pub struct Position {
     pub pieces: [[Bitboard; 6]; 2],
     pub occupied: Bitboard,
     pub turn: Color,
+    #[derivative(Hash = "ignore")]
+    #[derivative(PartialEq = "ignore")]
     pub castling: Castling,
     pub en_passant: Option<Square>,
+    #[derivative(Hash = "ignore")]
+    #[derivative(PartialEq = "ignore")]
     pub halfmove_clock: u16,
+    #[derivative(Hash = "ignore")]
+    #[derivative(PartialEq = "ignore")]
     pub fullmove_number: u16,
 }
 
@@ -35,7 +44,7 @@ pub enum Piece {
     King,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct Castling {
     inner: u8,
 }

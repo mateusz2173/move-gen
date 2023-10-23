@@ -45,7 +45,6 @@ impl fmt::Display for Move {
 
 impl MakeMove for Position {
     fn make_move(&mut self, mv: &Move) -> Result<Option<Piece>> {
-        self.validate_move(mv)?;
         let from = mv.from();
         let to = mv.to();
         let color = self.turn;
@@ -63,7 +62,9 @@ impl MakeMove for Position {
             }
         }
 
-        let (from_piece, from_color) = self.remove_piece_at(&from).expect("BUG: No piece at from square");
+        let (from_piece, from_color) = self
+            .remove_piece_at(&from)
+            .expect("BUG: No piece at from square");
 
         let captured = match mv.kind() {
             MoveKind::Capture | MoveKind::Quiet => {
@@ -279,6 +280,10 @@ pub enum MoveKind {
 }
 
 impl Move {
+    pub const fn null() -> Move {
+        Move { inner: 0 }
+    }
+
     pub fn new(from: Square, to: Square, promotion: Option<Piece>, kind: &MoveKind) -> Move {
         let mut inner = 0;
         inner |= from as u16;
@@ -389,6 +394,16 @@ impl Move {
         }
 
         None
+    }
+
+    pub fn is_irreversible(&self, pos: &Position) -> bool {
+        if matches!(self.kind(), MoveKind::Capture | MoveKind::PromotionCapture) {
+            return true;
+        }
+
+        let (piece, _) = pos.piece_at(&self.from()).unwrap();
+
+        piece == Piece::Pawn
     }
 
     fn set_promotion(&mut self, promotion: Piece) {
